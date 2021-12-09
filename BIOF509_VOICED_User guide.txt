@@ -1,0 +1,85 @@
+# Download the VOICED dataset
+The dataset can be download from:
+https://physionet.org/content/voiced/1.0.0/
+https://drive.google.com/file/d/1mSCWn5FiE0M0zz11u68cVORIqp0rMcP7/view?usp=sharing
+
+
+# Load & Check VOICED data
+
+### set the path
+Set the path to the folder of the VOICED dataset first and then the following code will make the list of file name of info file (voiceXXX-info.txt) and voice recording file (voiceXXX.txt)
+
+### read info data (.txt)
+The function, read_VOICED_info(index), can read the info file (.txt) and fix some typesetting error. The following code will read all info file and put them into DataFrame.
+
+		
+### extract the diagnosis to be the labels
+Here the code will extract the "diagnosis" column from the info DataFrame and make an array to be the "labels".
+
+### load voice data (.txt)
+The function, read_VOICED_signal(index, start=5000, end=35000), can read the voice recording file (.txt) from start point to end point. Because there are some zero points  at beginning of each recording and the length of each recording is about 38000 points, the segment from 5000th point to 35000th point is suggested. The following code will read all voice recording file and put them into an array.
+
+### spliting data into training and testing set
+The function, equal_shuffle_sample(data, labels, n_subjects), will randomly choose a give number (n_subjects) of samples of each classes from input dataset (data), and make these chosen samples to be a subset which is used for testing.
+
+### play the voice
+If you want to play the sound, use the code here. The parameter, "rate", will be 8000 since the sampling rate of original voice recording is 8000 Hz.
+
+### downsampling (sampling rate 8000 Hz -> 4000 Hz)
+The function, halfsample(voic, diag), will re-sample the voice recording with sampling rate of 4000 Hz and make one 8000-Hz recording to two 4000-Hz samples. This function will also assign labels to the new samples. 
+
+### divide signal into segments
+The function, divide_signal(data, labels, window=100, moving=100, divide=120, mode='simple', RP_scale=1000, RP_ceil=100), is used for dividing a recording into many segments and transform then to different format depending on the "mode" you choose.
+    data = the signal dataset to be processed
+    labels = the labels of the signal dataset
+    window = the length of each segment --- integer
+    moving = the distance between the start point of segments --- integer
+    divide = the number of total segments from 1 signal --- integer
+    mode = 'simple' is used for machine learning here, each segment will be output as a vector; 'CNN1d' is used for 1-D convolution, each segment will be output with a shape of (1, window); 'RecuPlot' is used for generating recurrence plot and 2-D convolution, each segment will be output with a shape of (1, window, window)
+    RP_scale = the scaling factor of recurrence plot, only used in 'RecuPlot' mode --- positive number
+    RP_ceil = the upper limit of recurrence plot, only used in 'RecuPlot' mode --- positive number
+
+---------------------------------------------------------------------------------------
+# SVM
+
+### divide data into segments
+Use divide_signal() function to segment the voice recordings in training and testing dataset with "simple" mode. Use the equal_shuffle_sample() to balance the number of each class in datasets and the "n_subjects" is set as the number of fewest classes in the dataset. A validation dataset will be split from training dataset. 
+
+### function for power spectral density
+The function, get_psd_values(signal, f=4000), will give the PSD value from input signal. The parameter, f, should be 4000 here because the voice recording has been down-sampled.
+
+### function for autocorrelation
+The two function, autocorr(signal) and get_autocorr_values(signal, f=4000), will give the autocorrelation value from input signal.
+
+### function for getting both PSD (top five peak and its value) and AC features (top peak and its value)
+The function, get_features(signal, f=4000), will extract the formentioned features (PSD and AC) from input signal. The following codes will extract the features from all segments in each dataset and make them a DataFrame.
+
+### Model training
+Here SVM will be fit to the training dataset and make prediction on both validation and testing dataset. 
+
+---------------------------------------------------------------------------------------
+# 1D-DCNN
+
+### divide data into segments
+Use divide_signal() function to segment the voice recordings in training and testing dataset with "CNN1d" mode. Use the equal_shuffle_sample() to balance the number of each class in datasets and the "n_subjects" is set as the number of fewest classes in the dataset. A validation dataset will be split from training dataset. 
+
+### Model training
+Here 1-D dilated CNN will be trained and make prediction on both validation and testing dataset. 
+
+---------------------------------------------------------------------------------------
+# AE+SVM
+
+### divide data into segments
+Use divide_signal() function to segment the voice recordings in training and testing dataset with "CNN1d" mode. Use the equal_shuffle_sample() to balance the number of each class in datasets and the "n_subjects" is set as the number of fewest classes in the dataset. A validation dataset will be split from training dataset. 
+
+### Model training
+Here an autoencoder with 1-D CNN will be trained and give the embedding of the input signal. Then the embedding will be used for training SVM.
+
+---------------------------------------------------------------------------------------
+# 1D-DCNN
+
+### divide data into segments
+Use divide_signal() function to segment the voice recordings in training and testing dataset with "RecuPlot" mode. Use the equal_shuffle_sample() to balance the number of each class in datasets and the "n_subjects" is set as the number of fewest classes in the dataset. A validation dataset will be split from training dataset. 
+
+### Model training
+Here 2-D dilated CNN will be trained and make prediction on both validation and testing dataset. 
